@@ -93,6 +93,46 @@
     transition: background 0.3s ease, width 0.3s ease;
   }
 </style>
+
+<!-- ===== UTM capture + event helper (must load before analytics) ===== -->
+<script>
+  window.UTM = (function () {
+    var p = new URLSearchParams(location.search);
+    var keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+    var got = {};
+    keys.forEach(function (k) { var v = p.get(k); if (v) got[k] = v; });
+    if (Object.keys(got).length) localStorage.setItem('mpl_utm', JSON.stringify(got));
+    try { return JSON.parse(localStorage.getItem('mpl_utm') || '{}'); } catch (e) { return {}; }
+  })();
+  window.track = function (event, props) {
+    if (window.posthog && window.posthog.capture) {
+      window.posthog.capture(event, Object.assign({}, window.UTM, props || {}));
+    }
+  };
+</script>
+
+<!-- ===== PostHog (product analytics, EU) ===== -->
+<script>
+  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+  posthog.init('phc_AFsPucQAgipVchxa773sQPNfCFBwbaHcd9FMMRNaJKVE', {
+    api_host: 'https://eu.i.posthog.com',
+    autocapture: false,
+    capture_pageview: false,
+    disable_session_recording: true,
+    loaded: function () { if (window.track) window.track('lp_view'); }
+  });
+</script>
+
+<!-- ===== Microsoft Clarity (session replay + heatmaps) ===== -->
+<script type="text/javascript">
+  (function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window, document, "clarity", "script", "x71afo66za");
+  // Note: input masking is enforced via data-clarity-mask="true" on the email field
+  // below, plus the Clarity dashboard Masking setting (Settings → Masking → Mask all).
+</script>
 </head>
 <body class="font-sans antialiased">
 
@@ -105,7 +145,7 @@
         </div>
         <span class="text-[15px] font-bold tracking-tight">MyPolicyLens</span>
       </div>
-      <a href="#waitlist" class="text-sm font-semibold text-gold-deep hover:text-gold-deep transition-colors">Join waitlist</a>
+      <a id="nav-waitlist-cta" href="#waitlist" class="text-sm font-semibold text-gold-deep hover:text-gold-deep transition-colors">Join waitlist</a>
     </div>
   </header>
 
@@ -185,7 +225,7 @@
             MyPolicyLens shows you this instantly — for every policy you hold.
           </p>
           <div class="mt-8 flex flex-col items-center gap-3">
-            <a href="#waitlist" class="cta-glow inline-flex items-center gap-2 rounded-xl bg-gold px-7 py-4 text-[15px] font-bold text-navy">
+            <a id="results-waitlist-cta" href="#waitlist" class="cta-glow inline-flex items-center gap-2 rounded-xl bg-gold px-7 py-4 text-[15px] font-bold text-navy">
               Join the waitlist <span aria-hidden="true">→</span>
             </a>
             <button id="r-retry" class="text-sm font-medium text-ink/50 hover:text-ink/70 transition-colors">Retake the quiz</button>
@@ -239,17 +279,22 @@
             required
             placeholder="you@email.com"
             autocomplete="email"
-            class="flex-1 rounded-xl border border-ink/15 bg-white/70 px-4 py-3.5 text-[15px] text-ink placeholder-ink/40 outline-none transition focus:border-gold/60 focus:bg-white"
+            data-clarity-mask="true"
+            class="w-full rounded-xl border border-ink/15 bg-white/70 px-4 py-3.5 text-[15px] text-ink placeholder-ink/40 outline-none transition focus:border-gold/60 focus:bg-white"
           />
           <button
             id="waitlist-submit"
             type="submit"
-            class="cta-glow shrink-0 rounded-xl bg-gold px-6 py-3.5 text-[15px] font-bold text-navy"
+            class="cta-glow w-full rounded-xl bg-gold px-6 py-3.5 text-[15px] font-bold text-navy"
           >
             Join waitlist
           </button>
         </form>
         <p id="form-msg" class="mt-4 hidden text-[14.5px] font-medium"></p>
+        <p class="mx-auto mt-4 max-w-md text-[12.5px] leading-relaxed text-ink/50">
+          We never sell your data. No spam, no sales calls.
+          <a href="/privacy.html" class="underline hover:text-ink/70 transition-colors">Privacy policy</a>
+        </p>
       </div>
     </div>
   </section>
@@ -304,7 +349,7 @@
         { text: "No, portability lets you carry your waiting-period credit to the new insurer", correct: true },
       ],
       explain:
-        "IRDAI portability rules let you switch insurers (at renewal) while carrying over the waiting-period credit you've already served. You're not locked in. MyPolicyLens is here to assist you with all your insurance rleated claim, anytime, anywhere...",
+        "IRDAI portability rules let you switch insurers (at renewal) while carrying over the waiting-period credit you've already served. You're not locked in. MyPolicyLens is here to assist you with all your insurance related claims, anytime, anywhere...",
     },
   ];
 
@@ -318,6 +363,8 @@
   let current = 0;
   let score = 0;
   let answered = false;
+  let quizStarted = false;
+  let quizScore = null; // null until the quiz is completed
 
   // ===================== ELEMENTS =====================
   const $ = (id) => document.getElementById(id);
@@ -384,6 +431,8 @@
     answered = true;
     const item = QUESTIONS[current];
     const chosen = item.options[idx];
+    if (!quizStarted) { quizStarted = true; track("quiz_start"); }
+    track("quiz_answer", { q_index: current, correct: chosen.correct });
     if (chosen.correct) score++;
 
     const buttons = [...$("q-options").children];
@@ -445,6 +494,9 @@
     $("r-score").textContent = `${score}/4`;
     const band = RESULTS.find((r) => score >= r.min && score <= r.max);
     $("r-headline").textContent = band ? band.msg : "";
+
+    quizScore = score;
+    track("quiz_complete", { score: score });
   }
 
   $("r-retry").addEventListener("click", () => {
@@ -459,6 +511,12 @@
   // init
   buildDots();
   renderQuestion();
+
+  // CTA click tracking (waitlist intent)
+  const navCta = $("nav-waitlist-cta");
+  if (navCta) navCta.addEventListener("click", () => track("cta_click", { location: "nav" }));
+  const resultsCta = $("results-waitlist-cta");
+  if (resultsCta) resultsCta.addEventListener("click", () => track("cta_click", { location: "results" }));
 
   // ===================== WAITLIST FORM =====================
   const form = $("waitlist-form");
@@ -479,6 +537,7 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const email = emailInput.value.trim();
+
     if (!validEmail(email)) {
       showMsg("Please enter a valid email address.", false);
       emailInput.focus();
@@ -489,21 +548,28 @@
     const originalLabel = submitBtn.textContent;
     submitBtn.textContent = "Joining…";
     submitBtn.style.opacity = "0.7";
-    
+
     try {
       const formData = new FormData();
       formData.append("email", email);
-    
+      formData.append("score", quizScore == null ? "" : String(quizScore));
+      Object.keys(UTM).forEach((k) => formData.append(k, UTM[k]));
+
       await fetch("https://script.google.com/macros/s/AKfycbyYsD17PTMm4oOmqzl9Zy4YQFABeMwkKj6Ub0XsBj-hb32oMZBux-HKZ9nyt7-CMrde/exec", {
         method: "POST",
         mode: "no-cors",
         body: formData,
       });
-    
+
+      // no-cors → response is opaque; we can't read success/failure here.
+      // Fire optimistically. PostHog signup_submit count vs Sheet rows = silent-failure rate.
+      track("signup_submit", { score: quizScore });
+
       form.reset();
       form.style.display = "none";
       showMsg("You're on the list. We'll reach out when we're ready.", true);
     } catch (err) {
+      track("signup_error", { reason: (err && err.message) || "unknown" });
       showMsg("Something went wrong on our end. Please try again in a moment.", false);
       submitBtn.disabled = false;
       submitBtn.textContent = originalLabel;
