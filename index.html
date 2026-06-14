@@ -489,15 +489,17 @@
     const originalLabel = submitBtn.textContent;
     submitBtn.textContent = "Joining…";
     submitBtn.style.opacity = "0.7";
-
+    
     try {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbzvSRgiT-Sa1xGHfc9QnEbGSA2SRf44beCKUEiSjpDOeEIi2xnMK-J5CwzrZ9WlE-Hj/exec", {
+      const formData = new FormData();
+      formData.append("email", email);
+    
+      await fetch("https://script.google.com/macros/s/AKfycbyYsD17PTMm4oOmqzl9Zy4YQFABeMwkKj6Ub0XsBj-hb32oMZBux-HKZ9nyt7-CMrde/exec", {
         method: "POST",
         mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email }),
+        body: formData,
       });
-
+    
       form.reset();
       form.style.display = "none";
       showMsg("You're on the list. We'll reach out when we're ready.", true);
